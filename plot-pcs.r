@@ -18,13 +18,11 @@ opt = parse_args(OptionParser(option_list=option_list))
 
 pcs = read.table(opt$pcs,sep=',',row.names=1,header=TRUE)
 samples = strsplit(opt$samples,',')[[1]]
-print(head(pcs))
-print(samples)
 
 png(opt$outpng,width=600,height=600)
 # first column of pcs is sample
 plot(pcs[,1],pcs[,2],pch='.',col='#CCCCCC',
-    xlab='PC1',ylab='PC2',main='Principal components')
+    xlab='PC1',ylab='PC2',main=opt$title,sub=opt$subtitle)
 points(pcs[samples,1],pcs[samples,2],pch=19,col='#000000')
 dev.off()
 
