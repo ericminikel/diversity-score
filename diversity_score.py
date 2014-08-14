@@ -38,7 +38,8 @@ def mean_euclid_dist(samples,pcs):
     requires n choose 2 comparisons.
     '''
     n = len(samples)
-    assert n <= 100, "Can't do more than 100 samples"
+    assert n <= 100, "Too computationally intensive to do more than 100 samples"
+    assert n > 1, "Mean distance not defined for <2 points"
     n_pairs = comb(n,2,exact=True)
     mean_euclid_dist = 0.0
     for pair in combinations(samples,2):
@@ -102,8 +103,26 @@ def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
     assert chr == record.CHROM, "Extracted contig name %s does not match input %s"%(record.CHROM,chr)
     assert pos == record.POS, "Extracted position %s does not match input %s"%(record.POS,pos)
     assert ref == record.REF, "Extracted REF allele %s does not match input %s"%(record.REF,ref)
-    assert alt in record.ALT, "Specified ALT allele not found at this site. Alleles are: %s"%str(record.ALT)
+    assert alt in record.ALT, "Specified ALT allele %s not found at this site. Alleles are: %s"%(alt,str(record.ALT))
     this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
     this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
     this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
     assert this_ac > 0 and this_ac < 100, "AC must be in 1 to 100 inclusive. AC in VCF INFO field is: %s"%this_ac
+    samples_with_allele = []
+    for sample in record.samples:
+        if this_alt_allele_number in map(int,sample.gt_alleles):
+            samples_with_allele.append(sample.sample)
+    return samples_with_allele
+
+def diversity_score(pcpath,vcfpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
+    '''
+    Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr,pos,ref,alt
+    for one allele. Finds the IDs of all individuals with that allele. Returns
+    mean Euclidean distance between those individuals, in n_pcs principal
+    component space.
+    '''
+    pcs = read_pcs(pcpath,n_pcs)
+    samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
+    meandist = mean_euclid_dist(samples,pcs)
+    return (meandist)
+
