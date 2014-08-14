@@ -1,5 +1,7 @@
 import pysam
+import vcf
 import gzip
+from StringIO import StringIO
 from itertools import combinations
 from scipy.misc import comb
 
@@ -89,20 +91,19 @@ def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
     (identified by column headers from the #CHROM line) that have this alt
     allele.
     '''
-    vcf_colnames = get_vcf_colnames(vcfpath)
+    vcf_header = get_vcf_header(vcfpath)
     vcf_line_string = get_vcf_line(vcfpath,chr,pos)
-    vcf_line_cols = vcf_line_string.strip().split('\t')
-    assert len(vcf_colnames) == len(vcf_line_cols), "Column names has length %s but there are %s fields in this line"%(len(vcf_colnames),len(vcf_line_cols))
-    vcf_line = dict((vcf_colnames[i], vcf_line_cols[i]) for i in range(0,len(vcf_colnames)))
-    assert chr == vcf_line['CHROM'], "Extracted contig name does not match input"
-    assert pos == int(vcf_line['POS']), "Extracted position does not match input"
-    alt_alleles = vcf_line['ALT'].split(',')
-    assert alt in alt_alleles, "Specified alt allele does not exist at this site"
-    this_alt_allele_index = alt_alleles.index(alt) # index of this particular allele in comma-separated INFO fields
-    this_alt_allele_number = alt_alleles.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
-    # check that 0 < AC < 100 for this allele.
-    info_fields = vcf_line['INFO'].split(';')
-    info_keys = [info_field.split("=")[0] for info_field in info_fields]
-    info_values = [info_field.split("=")[1] for info_field in info_fields]
-    ac = info_fields[0]
-
+    pseudo_vcf_file = StringIO(vcf_header+vcf_line_string)
+    vcf_reader = vcf.Reader(pseudo_vcf_file,'r')
+    records = list(vcf_reader)
+    assert len(records) > 0, "No records found for that allele."
+    assert len(records) < 2, "VCF contains >1 record at that position."
+    record = records[0] # now knowing there is exactly 1 record, take it.
+    assert chr == record.CHROM, "Extracted contig name %s does not match input %s"%(record.CHROM,chr)
+    assert pos == record.POS, "Extracted position %s does not match input %s"%(record.POS,pos)
+    assert ref == record.REF, "Extracted REF allele %s does not match input %s"%(record.REF,ref)
+    assert alt in record.ALT, "Specified ALT allele not found at this site. Alleles are: %s"%str(record.ALT)
+    this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
+    this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
+    this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
+    assert this_ac > 0 and this_ac < 100, "AC must be in 1 to 100 inclusive. AC in VCF INFO field is: %s"%this_ac
