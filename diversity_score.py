@@ -1,6 +1,7 @@
 import pysam
 import vcf
 import gzip
+import os
 from StringIO import StringIO
 from itertools import combinations
 from scipy.misc import comb
@@ -124,5 +125,12 @@ def diversity_score(pcpath,vcfpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
     pcs = read_pcs(pcpath,n_pcs)
     samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
     meandist = mean_euclid_dist(samples,pcs)
+    if rplot: # if user wants an R plot of the PCs
+        title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
+        outpng = "_".join([chr,str(pos),ref,alt])+".png"
+        subtitle = "\""+"Diversity score: "+str(meandist)+"\""
+        sample_list = "\""+",".join(samples)+"\""
+        rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
+        os.system(rcmd)
     return (meandist)
 
