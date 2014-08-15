@@ -171,7 +171,7 @@ def read_alleles(allelespath):
             alleles.append((chr,int(pos),ref,alt)) # cast pos to int and store allele as tuple
     return alleles
 
-def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
+def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot=False):
     '''
     Calculate diversity scores for a list of alleles in a file
     '''
@@ -179,10 +179,14 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
     weights = read_weights(weightpath)
     alleles = read_alleles(allelespath)
     vcf_header = get_vcf_header(vcfpath)
+    #print "ALLELE\tAC\tDIVSCORE\tFLAG" # this would be the header but user can print separately
     for allele in alleles:
         chr, pos, ref, alt = allele
+        allele_id = chr+":"+str(pos)+"_"+ref+">"+alt
         samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
+        ac = len(samples)
         meandist = mean_euclid_dist(samples,pcs,weights)
+        print "\t".join([allele_id,str(ac),str(meandist),flag])
         if rplot: # if user wants an R plot of the PCs
             make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
 
