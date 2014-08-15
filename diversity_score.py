@@ -157,3 +157,32 @@ def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=Fals
         os.system(rcmd)
     return (meandist)
 
+def read_alleles(allelespath):
+    '''
+    Get a list of chr, pos, ref, alt tuples from a whitespace-separated file
+    '''
+    alleles = []
+    with open(allelespath) as f:
+        for line in f.readlines():
+            chr, pos, ref, alt = line.strip().split()
+            alleles.append((chr,int(pos),ref,alt)) # cast pos to int and store allele as tuple
+    return alleles
+
+def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
+    '''
+    Calculate diversity scores for a list of alleles in a file
+    '''
+    pcs = read_pcs(pcpath,n_pcs)
+    weights = read_weights(weightpath)
+    alleles = read_alleles(allelespath)
+    for allele in alleles:
+        chr, pos, ref, alt = allele
+        samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
+        meandist = mean_euclid_dist(samples,pcs,weights)
+        if rplot: # if user wants an R plot of the PCs
+            title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
+            outpng = "_".join([chr,str(pos),ref,alt])+".png"
+            subtitle = "\""+"Diversity score: "+str(meandist)+"\""
+            sample_list = "\""+",".join(samples)+"\""
+            rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
+            os.system(rcmd)
