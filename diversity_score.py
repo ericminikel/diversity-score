@@ -2,6 +2,7 @@ import pysam
 import vcf
 import gzip
 import os
+import sys
 from StringIO import StringIO
 from itertools import combinations
 from scipy.misc import comb
@@ -183,7 +184,11 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
     for allele in alleles:
         chr, pos, ref, alt = allele
         allele_id = chr+":"+str(pos)+"_"+ref+">"+alt
-        samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
+        try:
+            samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
+        except AssertionError as e:
+            sys.stderr.write(e.message+"\n")
+            print "\t".join([allele_id,' ',' ',flag])
         ac = len(samples)
         meandist = mean_euclid_dist(samples,pcs,weights)
         print "\t".join([allele_id,str(ac),str(meandist),flag])
