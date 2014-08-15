@@ -87,6 +87,10 @@ def get_vcf_header(vcfpath):
                 header += line
             else:
                 break
+    # PyVCF splits on whitespace, not tab, so it gets sample names wrong when they
+    # contain spaces. Also Monkol changed the spaces to underscores in the PCA. 
+    # Therefore replace space with underscore and you'll match to PCA.
+    header = header.replace(' ','_') 
     return header
 
 def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
@@ -97,10 +101,6 @@ def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
     allele.
     '''
     vcf_header = get_vcf_header(vcfpath)
-    # PyVCF splits on whitespace, not tab, so it gets sample names wrong when they
-    # contain spaces. Also Monkol changed the spaces to underscores in the PCA. 
-    # Therefore replace space with underscore and you'll match to PCA.
-    vcf_header = vcf_header.replace(' ','_') 
     vcf_line_string = get_vcf_line(vcfpath,chr,pos)
     pseudo_vcf_file = StringIO(vcf_header+vcf_line_string)
     vcf_reader = vcf.Reader(pseudo_vcf_file,'r')
@@ -175,6 +175,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
     pcs = read_pcs(pcpath,n_pcs)
     weights = read_weights(weightpath)
     alleles = read_alleles(allelespath)
+    vcf_header = get_vcf_header(vcfpath)
     for allele in alleles:
         chr, pos, ref, alt = allele
         samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
