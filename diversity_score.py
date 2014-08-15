@@ -22,17 +22,20 @@ def read_pcs(path,n=9):
             pcs[sampleid] = samplepcs
     return pcs
 
-def euclid_dist(coords1, coords2):
+def euclid_dist(coords1,coords2,weights=None):
     '''
     Given two equal-length lists of coordinates in multi-dimensional space,
     return the Euclidean distance between the two points.
     '''
     assert len(coords1) == len(coords2), "Coordinate vectors differ in length"
     squared_diffs = [(coords1[i] - coords2[i])**2 for i in range(0,len(coords1))]
+    if weights is not None:
+        assert len(weights) == len(squared_diffs), "Weight vector is different length than coordinate vectors"
+        squared_diffs = [weights[i]*squared_diffs[i] for i in range(0,len(weights))]
     euclidean_distance = sum(squared_diffs)**.5
     return (euclidean_distance)
 
-def mean_euclid_dist(samples,pcs):
+def mean_euclid_dist(samples,pcs,weights=None):
     '''
     Given a list of samples and a dictionary of principal components, calculate
     the mean Euclidean distance between pairs of samples. For n samples this
@@ -45,7 +48,7 @@ def mean_euclid_dist(samples,pcs):
     mean_euclid_dist = 0.0
     for pair in combinations(samples,2):
         # average as you go
-        mean_euclid_dist += euclid_dist(pcs[pair[0]],pcs[pair[1]]) / n_pairs
+        mean_euclid_dist += euclid_dist(pcs[pair[0]],pcs[pair[1]],weights) / n_pairs
     return mean_euclid_dist
 
 def get_vcf_colnames(vcfpath):
@@ -124,7 +127,17 @@ def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
             samples_with_allele.append(sample.sample)
     return samples_with_allele
 
-def diversity_score(pcpath,vcfpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
+def read_weights(weightpath):
+    '''
+    Reads a list of weights (presumably PC eigenvalues) from
+    a file, whitespace and/or newline separated.
+    '''
+    with open(weightpath) as f:
+        filecontents = f.read() # gulp whole file
+        weights = filecontents.split() # on any whitespace including \n, \t or ' '
+        return map(float,weights) # convert all to numerics
+
+def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
     '''
     Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr,pos,ref,alt
     for one allele. Finds the IDs of all individuals with that allele. Returns
@@ -132,8 +145,9 @@ def diversity_score(pcpath,vcfpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
     component space.
     '''
     pcs = read_pcs(pcpath,n_pcs)
+    weights = read_weights(weightpath)
     samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
-    meandist = mean_euclid_dist(samples,pcs)
+    meandist = mean_euclid_dist(samples,pcs,weights)
     if rplot: # if user wants an R plot of the PCs
         title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
         outpng = "_".join([chr,str(pos),ref,alt])+".png"
