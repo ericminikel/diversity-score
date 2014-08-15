@@ -93,14 +93,13 @@ def get_vcf_header(vcfpath):
     header = header.replace(' ','_') 
     return header
 
-def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
+def get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt):
     '''
     Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr,pos,ref,alt
     for one allele. Looks at the VCF and returns a list of samples
     (identified by column headers from the #CHROM line) that have this alt
     allele.
     '''
-    vcf_header = get_vcf_header(vcfpath)
     vcf_line_string = get_vcf_line(vcfpath,chr,pos)
     pseudo_vcf_file = StringIO(vcf_header+vcf_line_string)
     vcf_reader = vcf.Reader(pseudo_vcf_file,'r')
@@ -146,7 +145,8 @@ def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=Fals
     '''
     pcs = read_pcs(pcpath,n_pcs)
     weights = read_weights(weightpath)
-    samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
+    vcf_header = get_vcf_header(vcfpath)
+    samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
     meandist = mean_euclid_dist(samples,pcs,weights)
     if rplot: # if user wants an R plot of the PCs
         title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
@@ -178,7 +178,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
     vcf_header = get_vcf_header(vcfpath)
     for allele in alleles:
         chr, pos, ref, alt = allele
-        samples = get_samples_with_allele(vcfpath,chr,pos,ref,alt)
+        samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
         meandist = mean_euclid_dist(samples,pcs,weights)
         if rplot: # if user wants an R plot of the PCs
             title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
