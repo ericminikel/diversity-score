@@ -136,6 +136,14 @@ def read_weights(weightpath):
         weights = filecontents.split() # on any whitespace including \n, \t or ' '
         return map(float,weights) # convert all to numerics
 
+def make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath):
+    title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
+    outpng = "_".join([chr,str(pos),ref,alt])+".png"
+    subtitle = "\""+"Diversity score: "+str(meandist)+"\""
+    sample_list = "\""+",".join(samples)+"\""
+    rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
+    os.system(rcmd)
+
 def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
     '''
     Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr,pos,ref,alt
@@ -149,12 +157,7 @@ def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=Fals
     samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
     meandist = mean_euclid_dist(samples,pcs,weights)
     if rplot: # if user wants an R plot of the PCs
-        title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
-        outpng = "_".join([chr,str(pos),ref,alt])+".png"
-        subtitle = "\""+"Diversity score: "+str(meandist)+"\""
-        sample_list = "\""+",".join(samples)+"\""
-        rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
-        os.system(rcmd)
+        make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
     return (meandist)
 
 def read_alleles(allelespath):
@@ -181,9 +184,5 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,n_pcs=9,rplot=False):
         samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
         meandist = mean_euclid_dist(samples,pcs,weights)
         if rplot: # if user wants an R plot of the PCs
-            title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
-            outpng = "_".join([chr,str(pos),ref,alt])+".png"
-            subtitle = "\""+"Diversity score: "+str(meandist)+"\""
-            sample_list = "\""+",".join(samples)+"\""
-            rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
-            os.system(rcmd)
+            make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
+
