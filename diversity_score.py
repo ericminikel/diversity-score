@@ -114,7 +114,12 @@ def get_samples_with_allele(vcfpath,chr,pos,ref,alt):
     this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
     assert this_ac > 0 and this_ac < 100, "AC must be in 1 to 100 inclusive. AC in VCF INFO field is: %s"%this_ac
     samples_with_allele = []
+    # PyVCF seems to fail on some gt_alleles calls, debug it:
     for sample in record.samples:
+        if sample['GT'] is None: # no calls apparently come through as None instead of ./.
+            # if you call sample.gt_alleles on them, PyVCF tries to do None.split() and
+            # throws an Attribute Error. so just ignore these.
+            continue
         if this_alt_allele_number in map(int,sample.gt_alleles):
             samples_with_allele.append(sample.sample)
     return samples_with_allele
