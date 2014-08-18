@@ -145,22 +145,6 @@ def make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath):
     rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
     os.system(rcmd)
 
-def diversity_score(pcpath,vcfpath,weightpath,chr,pos,ref,alt,n_pcs=9,rplot=False):
-    '''
-    Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr,pos,ref,alt
-    for one allele. Finds the IDs of all individuals with that allele. Returns
-    mean Euclidean distance between those individuals, in n_pcs principal
-    component space.
-    '''
-    pcs = read_pcs(pcpath,n_pcs)
-    weights = read_weights(weightpath)
-    vcf_header = get_vcf_header(vcfpath)
-    samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
-    meandist = mean_euclid_dist(samples,pcs,weights)
-    if rplot: # if user wants an R plot of the PCs
-        make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
-    return (meandist)
-
 def read_alleles(allelespath):
     '''
     Get a list of chr, pos, ref, alt tuples from a whitespace-separated file
