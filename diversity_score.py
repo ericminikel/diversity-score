@@ -43,7 +43,7 @@ def mean_euclid_dist(samples,pcs,weights=None):
     requires n choose 2 comparisons.
     '''
     n = len(samples)
-    assert n <= 120, "Too computationally intensive to do more than 120 samples"
+    assert n <= 2500, "Too computationally intensive to do more than 2500 samples"
     assert n > 1, "Mean distance not defined for <2 points"
     n_pairs = comb(n,2,exact=True)
     mean_euclid_dist = 0.0
@@ -115,7 +115,7 @@ def get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt):
     this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
     this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
     this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
-    assert this_ac > 0 and this_ac < 120, "AC must be in 1 to 120 inclusive. AC in VCF INFO field is: %s"%this_ac
+    assert this_ac > 0 and this_ac < 2500, "AC must be in 1 to 2500 inclusive. AC in VCF INFO field is: %s"%this_ac
     samples_with_allele = []
     # PyVCF seems to fail on some gt_alleles calls, debug it:
     for sample in record.samples:
