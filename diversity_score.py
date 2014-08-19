@@ -49,6 +49,12 @@ def mean_euclid_dist(samples,pcs,weights=None):
     mean_euclid_dist = 0.0
     for pair in combinations(samples,2):
         # average as you go
+        if not pcs.has_key(pair[0]):
+            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(pair[0]))
+            continue
+        if not pcs.has_key(pair[1]):
+            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(pair[1]))
+            continue
         mean_euclid_dist += euclid_dist(pcs[pair[0]],pcs[pair[1]],weights) / n_pairs
     return mean_euclid_dist
 
@@ -73,9 +79,15 @@ def get_vcf_line(vcfpath,chr,pos):
     tabixfile = pysam.Tabixfile(vcfpath)
     vcfline_generator = tabixfile.fetch(chr,pos-1,pos)
     lines = list(vcfline_generator)
-    assert len(lines) <= 1, "Tabix returned >1 line of VCF content for a single position."
-    assert len(lines) == 1, "Tabix found no such line in specified VCF."
-    return lines[0]
+    assert len(lines) >= 1, "Tabix found no such line in specified VCF."
+    wrong_line_content = "" # keep track of non-matching lines returned by tabix
+    for line in lines: # occasionally tabix returns >1 line (usu if an indel to the left overlaps the site). iterate to find the relevant one.
+        cols = line.strip().split('\t') 
+        if cols[0] == chr and cols[1] == str(pos):
+            return line
+        else:
+            wrong_line_content += line[:80] + "\n" # keep track of non-matching lines
+    raise ValueError("Tabix returned lines but none match the search: \n%s"%(wrong_line_content))
 
 def get_vcf_header(vcfpath):
     '''
@@ -178,4 +190,28 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
         print "\t".join([allele_id,str(ac),str(meandist),flag])
         if rplot: # if user wants an R plot of the PCs
             make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
+
+def score_entire_file(pcpath,vcfpath,weightpath,minac=1,maxac=2500,flag='',n_pcs=9):
+    pcs = read_pcs(pcpath,n_pcs)
+    weights = read_weights(weightpath)
+    vcf_reader = vcf.Reader(vcfpath,'r')
+    for record in vcf_reader: # iterate over every row of VCF
+        for alt in record.ALT: # for every alt allele at this site
+            this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
+            this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
+            this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
+            if this_ac < minac or this_ac > maxac:
+                continue
+            samples_with_allele = []
+            for sample in record.samples:
+                if sample['GT'] is None: # no calls apparently come through as None instead of ./.
+                    # if you call sample.gt_alleles on them, PyVCF tries to do None.split() and
+                    # throws an Attribute Error. so just ignore these.
+                    continue
+                if this_alt_allele_number in map(int,sample.gt_alleles):
+                    samples_with_allele.append(sample.sample)
+            ac = len(samples_with_allele)
+            assert ac == this_ac, "VCF has AC as %s, actual AC is %s"%(this_ac,ac)
+            meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
+            print "\t".join([allele_id,str(ac),str(meandist),flag])
 
