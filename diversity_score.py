@@ -194,7 +194,11 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
 def score_entire_file(pcpath,vcfpath,weightpath,minac=1,maxac=2500,flag='',n_pcs=9):
     pcs = read_pcs(pcpath,n_pcs)
     weights = read_weights(weightpath)
-    vcf_reader = vcf.Reader(vcfpath,'r')
+    if vcfpath[-3:] == ".gz": # open .vcf.gz file with gzip.open, otherwise just use open
+        openfunc = gzip.open
+    else:
+        openfunc = open
+    vcf_reader = vcf.Reader(openfunc(vcfpath)) # in theory PyVCF can accept just a path, but I found it only works with an fsock 
     for record in vcf_reader: # iterate over every row of VCF
         for alt in record.ALT: # for every alt allele at this site
             this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
@@ -204,12 +208,12 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=1,maxac=2500,flag='',n_pcs
                 continue
             samples_with_allele = []
             for sample in record.samples:
-                if sample['GT'] is None: # no calls apparently come through as None instead of ./.
+                if sample['GT'] is None: # no-calls apparently come through as None instead of ./.
                     # if you call sample.gt_alleles on them, PyVCF tries to do None.split() and
                     # throws an Attribute Error. so just ignore these.
                     continue
-                if this_alt_allele_number in map(int,sample.gt_alleles):
-                    samples_with_allele.append(sample.sample)
+                if this_alt_allele_number in map(int,sample.gt_alleles): # if this sample has this allele
+                    samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id and replace space with underscore
             ac = len(samples_with_allele)
             assert ac == this_ac, "VCF has AC as %s, actual AC is %s"%(this_ac,ac)
             meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
