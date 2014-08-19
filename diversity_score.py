@@ -193,7 +193,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
         if rplot: # if user wants an R plot of the PCs
             make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
 
-def score_entire_file(pcpath,vcfpath,weightpath,minac=1,maxac=2500,flag='',n_pcs=9):
+def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs=9):
     pcs = read_pcs(pcpath,n_pcs)
     weights = read_weights(weightpath)
     if vcfpath[-3:] == ".gz": # open .vcf.gz file with gzip.open, otherwise just use open
