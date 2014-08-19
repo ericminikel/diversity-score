@@ -126,17 +126,19 @@ def get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt):
     assert alt in record.ALT, "Specified ALT allele %s not found at this site. Alleles are: %s"%(alt,str(record.ALT))
     this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
     this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
-    this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
-    assert this_ac > 0 and this_ac < 2500, "AC must be in 1 to 2500 inclusive. AC in VCF INFO field is: %s"%this_ac
+    nominal_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
+    assert nominal_ac > 0 and nominal_ac < 2500, "AC must be in 1 to 2500 inclusive. AC in VCF INFO field is: %s"%this_ac
     samples_with_allele = []
-    # PyVCF seems to fail on some gt_alleles calls, debug it:
+    true_ac = 0
     for sample in record.samples:
-        if sample['GT'] is None: # no calls apparently come through as None instead of ./.
+        if sample['GT'] is None: # no-calls apparently come through as None instead of ./.
             # if you call sample.gt_alleles on them, PyVCF tries to do None.split() and
             # throws an Attribute Error. so just ignore these.
             continue
-        if this_alt_allele_number in map(int,sample.gt_alleles):
-            samples_with_allele.append(sample.sample)
+        if this_alt_allele_number in map(int,sample.gt_alleles): # if this sample has this allele
+            samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id, and replace space with underscore
+            true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
+    assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
     return samples_with_allele
 
 def read_weights(weightpath):
@@ -198,24 +200,26 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=1,maxac=2500,flag='',n_pcs
         openfunc = gzip.open
     else:
         openfunc = open
-    vcf_reader = vcf.Reader(openfunc(vcfpath)) # in theory PyVCF can accept just a path, but I found it only works with an fsock 
+    # in theory PyVCF can accept just a path, but I found it only works with an fsock, hence the need for openfunc
+    vcf_reader = vcf.Reader(openfunc(vcfpath),strict_whitespace=True) # split only on tab, allow spaces in ids
     for record in vcf_reader: # iterate over every row of VCF
         for alt in record.ALT: # for every alt allele at this site
             this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
             this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
-            this_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
-            if this_ac < minac or this_ac > maxac:
+            nominal_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
+            if nominal_ac < minac or nominal_ac > maxac:
                 continue
             samples_with_allele = []
+            true_ac = 0
             for sample in record.samples:
                 if sample['GT'] is None: # no-calls apparently come through as None instead of ./.
                     # if you call sample.gt_alleles on them, PyVCF tries to do None.split() and
                     # throws an Attribute Error. so just ignore these.
                     continue
                 if this_alt_allele_number in map(int,sample.gt_alleles): # if this sample has this allele
-                    samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id and replace space with underscore
-            ac = len(samples_with_allele)
-            assert ac == this_ac, "VCF has AC as %s, actual AC is %s"%(this_ac,ac)
+                    samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id, and replace space with underscore
+                    true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
+            assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
             meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
-            print "\t".join([allele_id,str(ac),str(meandist),flag])
+            print "\t".join([record.CHROM,str(record.POS),record.REF,str(alt),str(true_ac),str(meandist),flag])
 
