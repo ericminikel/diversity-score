@@ -6,6 +6,7 @@ import sys
 from StringIO import StringIO
 from itertools import combinations
 from scipy.misc import comb
+from minimal_representation import get_minimal_representation
 
 def read_pcs(path,n=9):
     '''
@@ -231,5 +232,6 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                     true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
             assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
             meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
-            print "\t".join([record.CHROM,str(record.POS),record.REF,str(alt),str(true_ac),str(meandist),flag])
+            minpos, minref, minalt = get_minimal_representation(record,POS,record.REF,str(alt))
+            print "\t".join([record.CHROM,str(minpos),minref,minalt,str(true_ac),str(meandist),flag])
 
