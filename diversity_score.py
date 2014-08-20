@@ -48,15 +48,19 @@ def mean_euclid_dist(samples,pcs,weights=None):
     assert n > 1, "Mean distance not defined for <2 points"
     n_pairs = comb(n,2,exact=True)
     mean_euclid_dist = 0.0
-    for pair in combinations(samples,2):
+    valid_pairs = 0
+    # check if all samples are in the PCs file
+    valid_samples = []
+    for i in range(len(samples)):
+        if pcs.has_key(samples[i]):
+            valid_samples.append(samples[i])
+        else:
+            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(samples[i]))
+    for pair in combinations(valid_samples,2):
         # average as you go
-        if not pcs.has_key(pair[0]):
-            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(pair[0]))
-            continue
-        if not pcs.has_key(pair[1]):
-            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(pair[1]))
-            continue
         mean_euclid_dist += euclid_dist(pcs[pair[0]],pcs[pair[1]],weights) / n_pairs
+        valid_pairs += 1
+    assert valid_pairs >= 1, "No valid pairs found"
     return mean_euclid_dist
 
 def get_vcf_colnames(vcfpath):
@@ -188,8 +192,13 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
         except AssertionError as e:
             sys.stderr.write(e.message+"\n")
             print "\t".join([allele_id,' ',' ',flag])
+            continue
         ac = len(samples)
-        meandist = mean_euclid_dist(samples,pcs,weights)
+        try:
+            meandist = mean_euclid_dist(samples,pcs,weights)
+        except AssertionError as e:
+            sys.stderr.write(e.message+"\n")
+            continue
         print "\t".join([allele_id,str(ac),str(meandist),flag])
         if rplot: # if user wants an R plot of the PCs
             make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
@@ -231,7 +240,11 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                     samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id, and replace space with underscore
                     true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
             assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
-            meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
-            minpos, minref, minalt = get_minimal_representation(record,POS,record.REF,str(alt))
-            print "\t".join([record.CHROM,str(minpos),minref,minalt,str(true_ac),str(meandist),flag])
+            try:
+                meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
+                minpos, minref, minalt = get_minimal_representation(record.POS,record.REF,str(alt))
+                print "\t".join([record.CHROM,str(minpos),minref,minalt,str(true_ac),str(meandist),flag])
+            except AssertionError as e:
+                sys.stderr.write(e.message+"\n")
+                continue
 
