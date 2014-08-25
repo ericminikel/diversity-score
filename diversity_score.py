@@ -189,7 +189,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
         allele_id = chr+":"+str(pos)+"_"+ref+">"+alt
         try:
             samples = get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt)
-        except AssertionError as e:
+        except (AssertionError, ValueError) as e:
             sys.stderr.write(e.message+"\n")
             print "\t".join([allele_id,' ',' ',flag])
             continue
