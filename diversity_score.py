@@ -3,6 +3,7 @@ import vcf
 import gzip
 import os
 import sys
+import random
 from StringIO import StringIO
 from itertools import combinations
 from scipy.misc import comb
@@ -248,3 +249,19 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                 sys.stderr.write(e.message+"\n")
                 continue
 
+def get_n_random_samples(pcs,n):
+    return random.sample(pcs.keys(),n)
+
+def generate_null_dist(pcs,weights,ac,distsize):
+    '''
+    For a given allele count ac, randomly draw ac individuals (yes, we assume
+    all heterozygotes) and calculate the divscore among them. Do this
+    distsize times to generate a null distribution for that ac value.
+    '''
+    distribution = []
+    for i in range(distsize):
+        samples = get_n_random_samples(pcs,ac)
+        divscore = mean_euclid_dist(samples,pcs,weights)
+        distribution.append(divscore)
+    return distribution
+    
