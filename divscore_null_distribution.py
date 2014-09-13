@@ -16,8 +16,6 @@ args = parser.parse_args()
 
 pcs = read_pcs(args.pcs)
 weights = read_weights(args.weights)
-dist = generate_null_dist(pcs,weights,args.ac,args.distsize)
-
-for element in dist:
+for element in  generate_null_dist(pcs,weights,args.ac,args.distsize):
     print element
 
