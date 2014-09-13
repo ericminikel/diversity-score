@@ -262,6 +262,6 @@ def generate_null_dist(pcs,weights,ac,distsize):
     for i in range(distsize):
         samples = get_n_random_samples(pcs,ac)
         divscore = mean_euclid_dist(samples,pcs,weights)
-        distribution.append(divscore)
-    return distribution
-    
+        yield divscore
+
+
