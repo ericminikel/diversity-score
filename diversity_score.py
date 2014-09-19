@@ -38,11 +38,12 @@ def euclid_dist(coords1,coords2,weights=None):
     euclidean_distance = sum(squared_diffs)**.5
     return (euclidean_distance)
 
-def mean_euclid_dist(samples,pcs,weights=None):
+def mean_euclid_dist(samples,pcs,weights=None,warn=True):
     '''
     Given a list of samples and a dictionary of principal components, calculate
     the mean Euclidean distance between pairs of samples. For n samples this
-    requires n choose 2 comparisons.
+    requires n choose 2 comparisons. If warn=False, then silently skip individuals
+    absent from the pcs file.
     '''
     n = len(samples)
     assert n <= 2500, "Too computationally intensive to do more than 2500 samples"
@@ -56,7 +57,8 @@ def mean_euclid_dist(samples,pcs,weights=None):
         if pcs.has_key(samples[i]):
             valid_samples.append(samples[i])
         else:
-            sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(samples[i]))
+            if warn:
+                sys.stderr.write("Warning: sample ID \"%s\" not found in PCs file. Ignoring.\n"%(samples[i]))
     for pair in combinations(valid_samples,2):
         # average as you go
         mean_euclid_dist += euclid_dist(pcs[pair[0]],pcs[pair[1]],weights) / n_pairs
@@ -242,7 +244,7 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                     true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
             assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
             try:
-                meandist = mean_euclid_dist(samples_with_allele,pcs,weights)
+                meandist = mean_euclid_dist(samples_with_allele,pcs,weights,warn=False) # do not warn if samples are missing from pcs
                 minpos, minref, minalt = get_minimal_representation(record.POS,record.REF,str(alt))
                 print "\t".join([record.CHROM,str(minpos),minref,minalt,str(true_ac),str(meandist),flag])
             except AssertionError as e:
