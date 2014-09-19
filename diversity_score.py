@@ -206,7 +206,13 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
         if rplot: # if user wants an R plot of the PCs
             make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
 
-def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs=9):
+def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs=9,acfields=['AC']):
+    '''
+    Runs through an entire VCF and gives diversity scores for every allele in the specified AC range.
+    Note that the acfields parameter is useful if you want to only consider variants that fall within
+    a particular AC range *in certain population(s)* and the AC for these populations is specified in
+    the INFO field, e.g. AC_AFR, AC_AMR, etc.
+    '''
     pcs = read_pcs(pcpath,n_pcs)
     weights = read_weights(weightpath)
     if vcfpath[-3:] == ".gz": # open .vcf.gz file with gzip.open, otherwise just use open
@@ -229,7 +235,9 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
         for alt in record.ALT: # for every alt allele at this site
             this_alt_allele_index = record.ALT.index(alt) # index of this particular allele in comma-separated INFO fields
             this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
-            nominal_ac = record.INFO['AC'][this_alt_allele_index] # allele count for this allele
+            nominal_ac = 0 # initialize a variable for the allele count as stated in the INFO field
+            for acfield in acfields: # add up the allele count in each AC field
+                nominal_ac += record.INFO[acfield][this_alt_allele_index]
             if nominal_ac < minac or nominal_ac > maxac:
                 continue
             samples_with_allele = []
@@ -242,7 +250,8 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                 if this_alt_allele_number in map(int,sample.gt_alleles): # if this sample has this allele
                     samples_with_allele.append(sample.sample.replace(' ','_')) # grab sample id, and replace space with underscore
                     true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
-            assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
+            if acfields == ['AC']: # only if we are including AC from *all* individuals, we can spot check that the AC is correct.
+                assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
             try:
                 meandist = mean_euclid_dist(samples_with_allele,pcs,weights,warn=False) # do not warn if samples are missing from pcs
                 minpos, minref, minalt = get_minimal_representation(record.POS,record.REF,str(alt))
