@@ -237,7 +237,7 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
             this_alt_allele_number = record.ALT.index(alt) + 1 # for GT fields, need allele number: 1, 2, etc. remember REF allele is 0.
             nominal_ac = 0 # initialize a variable for the allele count as stated in the INFO field
             for acfield in acfields: # add up the allele count in each AC field
-                nominal_ac += record.INFO[acfield][this_alt_allele_index]
+                nominal_ac += int(record.INFO[acfield][this_alt_allele_index])
             if nominal_ac < minac or nominal_ac > maxac:
                 continue
             samples_with_allele = []
@@ -252,8 +252,10 @@ def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs
                     true_ac += map(int,sample.gt_alleles).count(this_alt_allele_number) # add this indiv's allele count to the running total
             if acfields == ['AC']: # only if we are including AC from *all* individuals, we can spot check that the AC is correct.
                 assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
+            # we only care about the samples for which PCs are available, so take intersection of those two sets:    
+            samples_with_allele_in_pcs = list(set(samples_with_allele) & set(pcs.keys())) # 
             try:
-                meandist = mean_euclid_dist(samples_with_allele,pcs,weights,warn=False) # do not warn if samples are missing from pcs
+                meandist = mean_euclid_dist(samples_with_allele_in_pcs,pcs,weights,warn=False) # do not warn if samples are missing from pcs
                 minpos, minref, minalt = get_minimal_representation(record.POS,record.REF,str(alt))
                 print "\t".join([record.CHROM,str(minpos),minref,minalt,str(true_ac),str(meandist),flag])
             except AssertionError as e:
