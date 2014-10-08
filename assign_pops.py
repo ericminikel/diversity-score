@@ -36,7 +36,7 @@ def assign_1kg_centroids(pcs, pc_centroids, weights):
         nearest_pop[iid] = argmin_dist
     return nearest_pop
 
-def summarize_nearest_centroids(nearest_pop):
+def summarize_pops(nearest_pop):
     pop_counts = {} # dictionary with POP as keys and count(distinct IID) as values
     for iid in nearest_pop.keys():
         if not pop_counts.has_key(nearest_pop[iid]):
@@ -51,5 +51,4 @@ def printdict(d,alpha=True):
     else:
         for x, y in d.items():
             print str(x) + '\t' + str(y)
-
 
