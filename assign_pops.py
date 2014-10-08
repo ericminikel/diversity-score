@@ -23,3 +23,26 @@ def get_1kg_centroids(popd, pcs, n=9):
         pc_centroids[pop] = [pc_sum/pc_counts[pop] for pc_sum in pc_sums[pop]]
     return pc_centroids
 
+def assign_1kg_centroids(pcs, pc_centroids, weights):
+    nearest_pop = {} # dictionary where keys will be IIDs and values will be nearest population
+    for iid in pcs.keys():
+        min_dist = float("inf") # we'll iterate over the pops to see which centroid has the least distance to this person
+        argmin_dist = '' # population for which distance is minimized
+        for pop in pc_centroids.keys():
+            curr_dist = euclid_dist(pcs[iid],pc_centroids[pop],weights)
+            if curr_dist < min_dist:
+                argmin_dist = pop
+                min_dist = curr_dist
+        nearest_pop[iid] = argmin_dist
+    return nearest_pop
+
+def summarize_nearest_centroids(nearest_pop):
+    pop_counts = {} # dictionary with POP as keys and count(distinct IID) as values
+    for iid in nearest_pop.keys():
+        if not pop_counts.has_key(nearest_pop[iid]):
+            pop_counts[nearest_pop[iid]] = 0
+        pop_counts[nearest_pop[iid]] += 1
+    return pop_counts
+
+
+
