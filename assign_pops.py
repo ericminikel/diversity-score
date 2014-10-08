@@ -44,8 +44,12 @@ def summarize_nearest_centroids(nearest_pop):
         pop_counts[nearest_pop[iid]] += 1
     return pop_counts
 
-def printdict(d):
-    for x, y in d.items():
-        print str(x) + '\t' + str(y)
+def printdict(d,alpha=True):
+    if alpha:
+        for key in sorted(d.keys()):
+            print str(key) + '\t' + str(d[key])
+    else:
+        for x, y in d.items():
+            print str(x) + '\t' + str(y)
 
 
