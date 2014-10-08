@@ -1,6 +1,8 @@
 from diversity_score import euclid_dist, read_pcs, read_weights, make_r_plot
 
 def get_1kg_pops(ped_1kg_path):
+    # ped_1kg_path: ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20130502/integrated_call_samples.20130502.ALL.ped
+    # population definitions: http://www.1000genomes.org/category/frequently-asked-questions/population
     popd = {} # dictionary where keys are IIDs and values are POPs
     with open(ped_1kg_path) as f:
         for line in f.readlines():
