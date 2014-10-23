@@ -7,6 +7,10 @@ option_list = list(
               help="Path to CSV file of principal components"),
   make_option(c("-s", "--samples"), action="store", default=NA, type='character',
               help="Comma-separated list of samples to highlight"),
+  make_option(c("-r", "--refsamples"), action="store", default=NA, type='character',
+              help="Comma-separated list of reference 1kg samples to highlight"),
+  make_option(c("-k", "--refcolor"), action="store", default=NA, type='character',
+              help="Color for 1kg reference samples"),
   make_option(c("-o", "--outpng"), action="store", default='variant.png', type='character',
               help="PNG file to save plot [default %default]"),
   make_option(c("-t", "--title"), action="store", default='Principal components', type='character',
@@ -19,10 +23,17 @@ opt = parse_args(OptionParser(option_list=option_list))
 pcs = read.table(opt$pcs,sep=',',row.names=1,header=TRUE)
 samples = strsplit(opt$samples,',')[[1]]
 
+if (!is.na(opt$refsamples)) {
+    refsamples = strsplit(opt$refsamples,',')[[1]]
+}
+
 png(opt$outpng,width=600,height=600)
 # first column of pcs is sample
 plot(pcs[,1],pcs[,2],pch='.',col='#CCCCCC',
     xlab='PC1',ylab='PC2',main=opt$title,sub=opt$subtitle)
+if (!is.na(opt$refsamples)) {
+    points(pcs[refsamples,1],pcs[refsamples,2],pch=19,col=opt$refcolor)
+}
 points(pcs[samples,1],pcs[samples,2],pch=19,col='#000000')
 dev.off()
 
