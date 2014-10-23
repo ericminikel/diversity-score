@@ -203,7 +203,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
             continue
         print "\t".join([allele_id,str(ac),str(meandist),flag])
         if rplot: # if user wants an R plot of the PCs
-            make_r_plot(chr,pos,ref,alt,paste("Diversity score:",str(meandist)),samples,pcpath)
+            make_r_plot(chr,pos,ref,alt,"Diversity score: "+str(meandist),samples,pcpath)
 
 def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs=9,acfields=['AC']):
     '''
