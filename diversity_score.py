@@ -159,10 +159,9 @@ def read_weights(weightpath):
         weights = filecontents.split() # on any whitespace including \n, \t or ' '
         return map(float,weights) # convert all to numerics
 
-def make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath):
+def make_r_plot(chr,pos,ref,alt,subtitle,samples,pcpath):
     title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
     outpng = "_".join([chr,str(pos),ref,alt])+".png"
-    subtitle = "\""+"Diversity score: "+str(meandist)+"\""
     sample_list = "\""+",".join(samples)+"\""
     rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
     os.system(rcmd)
@@ -204,7 +203,7 @@ def diversity_scores(pcpath,vcfpath,weightpath,allelespath,flag='',n_pcs=9,rplot
             continue
         print "\t".join([allele_id,str(ac),str(meandist),flag])
         if rplot: # if user wants an R plot of the PCs
-            make_r_plot(chr,pos,ref,alt,meandist,samples,pcpath)
+            make_r_plot(chr,pos,ref,alt,paste("Diversity score:",str(meandist)),samples,pcpath)
 
 def score_entire_file(pcpath,vcfpath,weightpath,minac=2,maxac=2500,flag='',n_pcs=9,acfields=['AC']):
     '''
