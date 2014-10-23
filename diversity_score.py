@@ -160,10 +160,10 @@ def read_weights(weightpath):
         return map(float,weights) # convert all to numerics
 
 def make_r_plot(chr,pos,ref,alt,subtitle,samples,pcpath):
-    title = "\""+chr+":"+str(pos)+" "+ref+">"+alt+"\""
+    title = chr+":"+str(pos)+" "+ref+">"+alt
     outpng = "_".join([chr,str(pos),ref,alt])+".png"
     sample_list = "\""+",".join(samples)+"\""
-    rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t "+title+" -o "+outpng+" -u "+subtitle
+    rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t \""+title+"\" -o "+outpng+" -u \""+subtitle+"\""
     os.system(rcmd)
 
 def read_alleles(allelespath):
