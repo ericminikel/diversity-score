@@ -159,11 +159,15 @@ def read_weights(weightpath):
         weights = filecontents.split() # on any whitespace including \n, \t or ' '
         return map(float,weights) # convert all to numerics
 
-def make_r_plot(chr,pos,ref,alt,subtitle,samples,pcpath):
+def make_r_plot(chr,pos,ref,alt,subtitle,samples,pcpath,refsamples=None,refcolor=None):
     title = chr+":"+str(pos)+" "+ref+">"+alt
     outpng = "_".join([chr,str(pos),ref,alt])+".png"
     sample_list = "\""+",".join(samples)+"\""
-    rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t \""+title+"\" -o "+outpng+" -u \""+subtitle+"\""
+    rcmd = "plot-pcs.r -p "+pcpath+" -s "+sample_list+" -t \""+title+"\" -o "+outpng+" -u \""+subtitle+"\" "
+    if refsamples and refcolor:
+        refsample_list = "\""+",".join(refsamples)+"\""
+        rcmd = rcmd+" -r "+refsample_list+" -k \""+refcolor+"\""
+    print rcmd
     os.system(rcmd)
 
 def read_alleles(allelespath):
