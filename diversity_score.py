@@ -149,6 +149,37 @@ def get_samples_with_allele(vcfpath,vcf_header,chr,pos,ref,alt):
     assert true_ac == nominal_ac, "VCF has AC as %s, actual AC is %s.\nRecord is:\n%s"%(nominal_ac,true_ac,str(record))
     return samples_with_allele
 
+
+def get_sample_genotypes(vcfpath,vcf_header,chr,pos,sampleids):
+    '''
+    Accepts a path to a (bgzipped, tabix-indexed) VCF file, and chr, pos
+    for one site, and a list of sample IDs. Returns genotypes at that site for those samples.
+    '''
+    vcf_line_string = get_vcf_line(vcfpath,chr,pos)
+    pseudo_vcf_file = StringIO(vcf_header+vcf_line_string)
+    vcf_reader = vcf.Reader(pseudo_vcf_file,'r')
+    records = list(vcf_reader)
+    assert len(records) > 0, "No records found for that allele."
+    assert len(records) < 2, "VCF contains >1 record at that position."
+    record = records[0] # now knowing there is exactly 1 record, take it.
+    assert chr == record.CHROM, "Extracted contig name %s does not match input %s"%(record.CHROM,chr)
+    assert pos == record.POS, "Extracted position %s does not match input %s"%(record.POS,pos)
+    allele_dict = {}
+    allele_dict[0] = record.REF
+    for i in range(len(record.ALT)):
+        allele_dict[i+1] = str(record.ALT[i])
+    genotypes = []
+    for sampleid in sampleids:
+        genotype_string = record.genotype(sampleid)['GT']
+        if genotype_string is None:
+            letter_genotype = ['.','.']
+        else:
+            numeric_genotype = map(int,genotype_string.split("/"))
+            letter_genotype = [allele_dict[x] for x in numeric_genotype]
+        new_genotype_string = "/".join(letter_genotype)
+        genotypes.append(new_genotype_string)
+    return genotypes
+
 def read_weights(weightpath):
     '''
     Reads a list of weights (presumably PC eigenvalues) from
