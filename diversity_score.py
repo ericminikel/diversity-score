@@ -168,7 +168,7 @@ def get_sample_genotypes(vcfpath,vcf_header,chr,pos,sampleids):
     allele_dict[0] = record.REF
     for i in range(len(record.ALT)):
         allele_dict[i+1] = str(record.ALT[i])
-    genotypes = []
+    genotypes = {}
     for sampleid in sampleids:
         genotype_string = record.genotype(sampleid)['GT']
         if genotype_string is None:
@@ -177,7 +177,7 @@ def get_sample_genotypes(vcfpath,vcf_header,chr,pos,sampleids):
             numeric_genotype = map(int,genotype_string.split("/"))
             letter_genotype = [allele_dict[x] for x in numeric_genotype]
         new_genotype_string = "/".join(letter_genotype)
-        genotypes.append(new_genotype_string)
+        genotypes[sampleid] = new_genotype_string
     return genotypes
 
 def read_weights(weightpath):
