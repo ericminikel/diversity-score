@@ -1,5 +1,5 @@
 import sys
-from diversity_score import euclid_dist, read_pcs, read_weights, make_r_plot, get_vcf_line, get_vcf_header
+from diversity_score import *
 from StringIO import StringIO
 
 def get_1kg_pops(ped_1kg_path):
